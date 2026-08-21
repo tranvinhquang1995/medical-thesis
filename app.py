@@ -73,7 +73,8 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- BACKGROUND SECRETS & KEY INGESTION (Zero UI Clutter) ---\ngemini_api_key = ""
+# --- BACKGROUND SECRETS & KEY INGESTION (Zero UI Clutter) ---
+gemini_api_key = ""
 s2_api_key = ""
 
 try:
@@ -95,7 +96,8 @@ except Exception:
 # Default Model Selection (Handled in the background)
 model_choice = "gemini-2.5-flash"
 
-# --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---\nif "current_tab" not in st.session_state:
+# --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---
+if "current_tab" not in st.session_state:
     st.session_state.current_tab = "📝 Dịch thuật văn bản"
 
 st.sidebar.markdown("<h4 style='color: #0f4c5c; font-weight: 600; margin-bottom: 10px;'>📋 CHỨC NĂNG ỨNG DỤNG</h4>", unsafe_allow_html=True)
