@@ -1,9 +1,9 @@
 import os
 import streamlit as st
-from translator_text_v2 import translate_medical_text
-from translator_file_v2 import translate_docx, translate_pdf
-from lit_search_v3 import perform_literature_search
-from deep_search_v5 import optimize_search_prompt, deep_search_with_gemini, deep_search_with_academic_db
+from translator_text import translate_medical_text
+from translator_file import translate_docx, translate_pdf
+from lit_search import perform_literature_search
+from deep_search import optimize_search_prompt, deep_search_with_gemini, deep_search_with_academic_db
 
 # Set page configuration
 st.set_page_config(
