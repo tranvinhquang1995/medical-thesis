@@ -2,8 +2,8 @@ import os
 import streamlit as st
 from translator_text import translate_medical_text
 from translator_file import translate_docx, translate_pdf
-from lit_search_v2 import perform_literature_search_v2
-from deep_search_v3 import optimize_search_prompt_with_gemini, deep_search_with_semantic_scholar_v3
+from lit_search_v2 import perform_literature_search
+from deep_search_v4 import optimize_search_prompt_with_gemini, deep_search_with_gemini, deep_search_with_semantic_scholar
 
 # Set page configuration
 st.set_page_config(
@@ -61,11 +61,40 @@ st.markdown("---")
 st.sidebar.image("https://img.icons8.com/illustrations/external-doctor-working-from-home-flat-flat-medical-illustration/256/external-doctor-working-from-home-flat-flat-medical-illustration.png", width=150)
 st.sidebar.title("Cấu hình hệ thống")
 
-# API Keys Ingestion
+# --- STREAMLIT SECRETS INTEGRATION ---
+# Attempt to read keys from Streamlit Secrets automatically
+secrets_gemini = ""
+secrets_s2 = ""
+
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        secrets_gemini = st.secrets["GEMINI_API_KEY"]
+    elif "gemini_api_key" in st.secrets:
+        secrets_gemini = st.secrets["gemini_api_key"]
+except Exception:
+    pass
+
+try:
+    if "SEMANTIC_SCHOLAR_API_KEY" in st.secrets:
+        secrets_s2 = st.secrets["SEMANTIC_SCHOLAR_API_KEY"]
+    elif "semantic_scholar_api_key" in st.secrets:
+        secrets_s2 = st.secrets["semantic_scholar_api_key"]
+except Exception:
+    pass
+
+# API Keys Ingestion UI (Auto-filled if present in Secrets)
 gemini_api_key = st.sidebar.text_input(
     "Gemini API Key (Bắt buộc)",
+    value=secrets_gemini,
     type="password",
-    help="Lấy API key tại Google AI Studio để kết nối với bộ não Gemini 3.7 Flash."
+    help="Lấy API key tại Google AI Studio. Tự động lấy từ Secrets nếu đã được cấu hình."
+)
+
+s2_api_key = st.sidebar.text_input(
+    "Semantic Scholar API Key (Tùy chọn)",
+    value=secrets_s2,
+    type="password",
+    help="Không bắt buộc do Semantic Scholar API được dùng miễn phí. Điền vào nếu bạn muốn nâng tốc độ/hạn mức truy cập."
 )
 
 # Select Model
@@ -96,7 +125,7 @@ st.sidebar.info("""
 if not gemini_api_key:
     st.markdown("""
     <div class="api-warning">
-        ⚠️ <strong>Yêu cầu cấu hình:</strong> Vui lòng nhập <strong>Gemini API Key</strong> ở thanh bên trái để bắt đầu sử dụng tất cả các tính năng của ứng dụng.
+        ⚠️ <strong>Yêu cầu cấu hình:</strong> Vui lòng nhập <strong>Gemini API Key</strong> ở thanh bên trái hoặc cấu hình trong <strong>Streamlit Secrets</strong> để bắt đầu sử dụng tất cả các tính năng của ứng dụng.
     </div>
     """, unsafe_allow_html=True)
     st.info("Nếu chưa có API Key, bạn có thể đăng ký miễn phí tại [Google AI Studio](https://aistudio.google.com/).")
@@ -199,7 +228,7 @@ elif feature_tab == "📂 Dịch file Docx, PDF":
 # ----------------- FEATURE 3: LITERATURE SEARCH -----------------
 elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
     st.header("🔍 Tìm kiếm tài liệu khoa học và y văn")
-    st.write("Nhập từ khóa hoặc câu hỏi y học để Gemini tối ưu hóa thành truy vấn song ngữ (Anh-Việt) và thực hiện tìm kiếm học thuật trực tuyến thông qua Google Search Grounding. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
+    st.write("Nhập từ khóa hoặc câu hỏi y học để Gemini thực hiện tìm kiếm học thuật trực tuyến thông qua Google Grounding. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
     
     search_query = st.text_input("Nhập chủ đề hoặc từ khóa y văn cần tìm kiếm:", placeholder="Ví dụ: Thử nghiệm lâm sàng của thuốc Pembrolizumab trong điều trị ung thư phổi tế bào nhỏ...")
     
@@ -209,39 +238,33 @@ elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
         elif not search_query.strip():
             st.warning("Vui lòng nhập từ khóa tìm kiếm.")
         else:
-            with st.status("Đang phân tích, tối ưu hóa truy vấn và tìm kiếm trực tuyến...", expanded=True) as status:
-                st.write("🔎 Đang phân tích từ khóa và tạo chuỗi tìm kiếm song ngữ Anh-Việt học thuật...")
-                results = perform_literature_search_v2(search_query, gemini_api_key, model_choice)
+            with st.spinner("Gemini đang rà soát dữ liệu y học toàn cầu và tổng hợp báo cáo..."):
+                results = perform_literature_search(search_query, gemini_api_key, model_choice)
                 
-                st.write(f"🔑 **Truy vấn học thuật song ngữ đã tối ưu:** `{results.get('optimized_query', '')}`")
-                st.write("🌍 Đang tổng hợp dữ liệu khoa học toàn cầu bằng Google Search Grounding...")
+                st.markdown("### 📊 Báo cáo tổng hợp tài liệu học thuật:")
+                st.markdown(results["report"])
                 
-                status.update(label="Tìm kiếm hoàn tất!", state="complete", expanded=False)
-                
-            st.markdown("### 📊 Báo cáo tổng hợp tài liệu học thuật:")
-            st.markdown(results["report"])
-            
-            # Show sources explicitly
-            if results["sources"]:
-                st.markdown("---")
-                st.markdown("### 🔗 Các nguồn tài liệu uy tín tìm thấy:")
-                # Deduplicate sources
-                seen = set()
-                unique_sources = []
-                for s in results["sources"]:
-                    if s["url"] not in seen:
-                        seen.add(s["url"])
-                        unique_sources.append(s)
-                        
-                for idx, src in enumerate(unique_sources):
-                    st.markdown(f"**[{idx+1}]** [{src['title']}]({src['url']})")
-            else:
-                st.info("Không phát hiện thêm nguồn cụ thể từ siêu dữ liệu.")
+                # Show sources explicitly
+                if results["sources"]:
+                    st.markdown("---")
+                    st.markdown("### 🔗 Các nguồn tài liệu uy tín tìm thấy:")
+                    # Deduplicate sources
+                    seen = set()
+                    unique_sources = []
+                    for s in results["sources"]:
+                        if s["url"] not in seen:
+                            seen.add(s["url"])
+                            unique_sources.append(s)
+                            
+                    for idx, src in enumerate(unique_sources):
+                        st.markdown(f"**[{idx+1}]** [{src['title']}]({src['url']})")
+                else:
+                    st.info("Không phát hiện thêm nguồn cụ thể từ siêu dữ liệu.")
 
-# ----------------- FEATURE 4: DEEP SEARCH -----------------
+# ----------------- FEATURE 4: DEEP SEARCH (SEMANTIC SCHOLAR) -----------------
 elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
     st.header("💡 Tìm kiếm y học chuyên sâu qua Semantic Scholar API")
-    st.write("Nhập từ khóa hoặc câu hỏi khóa luận của bạn. Gemini sẽ tối ưu hóa thành chuỗi từ khóa tiếng Anh chuyên sâu, tự động truy vấn cơ sở dữ liệu Semantic Scholar (200M+ bài báo peer-reviewed) và biên soạn bài báo cáo Literature Review hoàn chỉnh.")
+    st.write("Gemini sẽ tối ưu hóa từ khóa của bạn thành chuỗi tiếng Anh chuyên sâu, sau đó trực tiếp truy vấn cơ sở dữ liệu học thuật khổng lồ của Semantic Scholar và lập báo cáo Literature Review khoa học.")
     
     deep_query = st.text_area("Nhập yêu cầu nghiên cứu/câu hỏi khóa luận y văn của bạn:", height=100, placeholder="Ví dụ: Cơ chế tác dụng của vắc xin mRNA thế hệ mới trong việc phòng ngừa biến chủng SARS-CoV-2...")
     
@@ -251,24 +274,32 @@ elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
         elif not deep_query.strip():
             st.warning("Vui lòng điền nội dung nghiên cứu.")
         else:
-            with st.status("Đang phân tích và truy xuất dữ liệu từ Semantic Scholar...", expanded=True) as status:
-                st.write("🤖 Đang biên soạn câu hỏi sang thuật ngữ MeSH tiếng Anh học thuật...")
+            # Step 1: Optimize prompt using Gemini
+            with st.status("Đang phân tích và tối ưu hóa từ khóa chuyên ngành...", expanded=True) as status:
+                st.write("🤖 Đang dịch thuật và biên soạn sang thuật ngữ MeSH tiếng Anh...")
                 optimized_eng_query = optimize_search_prompt_with_gemini(deep_query, gemini_api_key, model_choice)
-                st.write(f"🔑 **Từ khóa tiếng Anh học thuật đã được tối ưu:** `{optimized_eng_query}`")
+                st.write(f"🔑 **Từ khóa tiếng Anh chuyên sâu đã được tối ưu:** `{optimized_eng_query}`")
                 
-                st.write("📚 Đang truy vấn trực tiếp cơ sở dữ liệu bài báo peer-reviewed trên Semantic Scholar...")
-                results = deep_search_with_semantic_scholar_v3(optimized_eng_query, gemini_api_key, model_choice)
+                st.write("🌍 Đang bắt đầu truy vấn chuyên sâu cơ sở dữ liệu học thuật Semantic Scholar...")
+                
+                # Call search with semantic scholar
+                results = deep_search_with_semantic_scholar(
+                    optimized_query=optimized_eng_query, 
+                    api_key=gemini_api_key, 
+                    model_name=model_choice,
+                    s2_api_key=s2_api_key if s2_api_key else None
+                )
                 
                 status.update(label="Truy xuất hoàn tất!", state="complete", expanded=False)
                 
             if results.get("success", False):
-                st.markdown(f"### 🛡️ Kết quả nghiên cứu chuyên sâu từ **{results['engine']}**:")
+                st.markdown(f"### 🛡️ Báo cáo Tổng quan tài liệu y văn từ **{results['engine']}**:")
                 st.markdown(results["report"])
                 
                 # Show sources explicitly
                 if results["sources"]:
                     st.markdown("---")
-                    st.markdown("### 📚 Danh mục tài liệu tham khảo chính xác từ Semantic Scholar:")
+                    st.markdown("### 📚 Danh mục bài báo khoa học chính xác:")
                     seen = set()
                     unique_sources = []
                     for s in results["sources"]:
