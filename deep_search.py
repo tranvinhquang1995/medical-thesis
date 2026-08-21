@@ -21,7 +21,7 @@ Structure of the Deep Literature Review:
 Tone and Language: Professional, clinical, and precise. Use the language of the user's query unless specified.
 """
 
-def optimize_search_prompt(user_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
+def optimize_search_prompt(user_query: str, api_key: str, model_name: str = "gemini-3.7-flash") -> str:
     """
     Step 1: Uses AI to analyze the user's Vietnamese/English query,
     translate it into an optimized, highly-specific English academic search query
@@ -47,7 +47,7 @@ def optimize_search_prompt(user_query: str, api_key: str, model_name: str = "gem
     except Exception as e:
         return user_query
 
-def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
+def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str = "gemini-3.7-flash") -> dict:
     """
     Hybrid Deep Search: Uses AI with web search grounding and optimized academic query.
     """
@@ -95,7 +95,7 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
             "error": str(e)
         }
 
-def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash", limit: int = 5, db_api_key: str = None) -> dict:
+def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name: str = "gemini-3.7-flash", limit: int = 5, db_api_key: str = None) -> dict:
     """
     Calls international academic database API to search for peer-reviewed papers, then feeds abstracts
     into AI to synthesize a structured Literature Review with active links.
