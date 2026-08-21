@@ -21,7 +21,7 @@ Rules for Translation:
 4. Output: Return ONLY the translated text corresponding to the input chunk. Do not add conversational preambles, comments, or "Here is the translation:".
 """
 
-def translate_docx(file_path: str, output_path: str, direction: str, api_key: str, model_name: str = "gemini-2.5-flash", progress_bar=None) -> str:
+def translate_docx(file_path: str, output_path: str, direction: str, api_key: str, model_name: str = "gemini-3.7-flash", progress_bar=None) -> str:
     """
     Translates a DOCX file while maintaining structure and layout.
     Uses a stateful Chat session for contextual coherence.
@@ -105,7 +105,7 @@ def translate_docx(file_path: str, output_path: str, direction: str, api_key: st
     doc.save(output_path)
     return output_path
 
-def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key: str, model_name: str = "gemini-2.5-flash", progress_bar=None) -> str:
+def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key: str, model_name: str = "gemini-3.7-flash", progress_bar=None) -> str:
     """
     Translates a PDF file by extracting its pages and generating a clean,
     well-formatted DOCX document with matching translation.
