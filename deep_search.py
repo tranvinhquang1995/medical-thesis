@@ -54,7 +54,7 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
     client = genai.Client(api_key=api_key)
     prompt = (
         f"Hãy thực hiện một nghiên cứu y khoa chuyên sâu và viết một bài tổng quan tài liệu y học (Literature Review) "
-        f"chi tiết, chất lượng cao về chủ đề sau:\\n\\n{optimized_query}\\n\\n"
+        f"chi tiết, chất lượng cao về chủ đề sau:\n\n{optimized_query}\n\n"
         f"Hãy chắc chắn viết một bài viết hoàn chỉnh, khoa học, có cấu trúc học thuật rõ ràng, "
         f"và sử dụng chú thích nguồn [1], [2]..."
     )
