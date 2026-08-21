@@ -57,13 +57,33 @@ def perform_literature_search(query: str, api_key: str, model_name: str = "gemin
     client = genai.Client(api_key=api_key)
     
     # Step 1: Optimize prompt into bilingual terms
-    optimized_query = optimize_bilingual_search_prompt(query, api_key, model_name)
+    optimized_query = ""
+    try:
+        optimized_query = optimize_bilingual_search_prompt(query, api_key, model_name)
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+            friendly_error = (
+                "⚠️ **Giới hạn yêu cầu đã vượt hạn mức (Lỗi 429 - Hạn mức dịch vụ):**\n\n"
+                "Khóa dịch vụ hiện tại đã tạm thời vượt quá tần suất yêu cầu tối đa trong một phút hoặc hạn mức ngày của phiên bản Trí tuệ nhân tạo (AI).\n\n"
+                "**Cách khắc phục:**\n"
+                "- Vui lòng đợi **1-2 phút** rồi nhấn nút thử lại.\n"
+                "- Nếu bạn đang deploy ứng dụng, hãy đảm bảo đã thiết lập chính xác khóa cá nhân trong cấu hình bảo mật `secrets.toml` để tránh dùng chung tài khoản bị giới hạn.\n"
+                "- Hoặc bạn có thể tạo một khóa dịch vụ mới thay thế."
+            )
+            return {
+                "optimized_query": query,
+                "report": friendly_error,
+                "sources": [],
+                "queries": []
+            }
+        optimized_query = f"{query} medical literature"
     
     # Step 2: Prompt with Web Grounding
     prompt = (
-        f"Hãy thực hiện tìm kiếm tài liệu khoa học và viết một báo cáo tổng quan y học chi tiết về chủ đề: {query}\\n\\n"
-        f"Bạn có thể sử dụng chuỗi truy vấn đã được tối ưu hóa sau đây để tìm kiếm trên mạng:\\n"
-        f"`{optimized_query}`\\n\\n"
+        f"Hãy thực hiện tìm kiếm tài liệu khoa học và viết một báo cáo tổng quan y học chi tiết về chủ đề: {query}\\\\n\\\\n"
+        f"Bạn có thể sử dụng chuỗi truy vấn đã được tối ưu hóa sau đây để tìm kiếm trên mạng:\\\\n"
+        f"`{optimized_query}`\\\\n\\\\n"
         f"Yêu cầu viết báo cáo hoàn chỉnh, có các phần rõ ràng theo hướng dẫn hệ thống, sử dụng chú thích nguồn [1], [2]..."
     )
     
@@ -107,9 +127,20 @@ def perform_literature_search(query: str, api_key: str, model_name: str = "gemin
             "queries": search_queries
         }
     except Exception as e:
+        error_msg = str(e)
+        friendly_error = f"Đã xảy ra lỗi khi tìm kiếm tài liệu: {error_msg}"
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+            friendly_error = (
+                "⚠️ **Giới hạn yêu cầu đã vượt hạn mức (Lỗi 429 - Hạn mức dịch vụ):**\n\n"
+                "Khóa dịch vụ hiện tại đã tạm thời vượt quá tần suất yêu cầu tối đa trong một phút hoặc hạn mức ngày của phiên bản Trí tuệ nhân tạo (AI).\n\n"
+                "**Cách khắc phục:**\n"
+                "- Vui lòng đợi **1-2 phút** rồi nhấn nút thử lại.\n"
+                "- Nếu bạn đang deploy ứng dụng, hãy đảm bảo đã thiết lập chính xác khóa cá nhân trong cấu hình bảo mật `secrets.toml` để tránh dùng chung tài khoản bị giới hạn.\n"
+                "- Hoặc bạn có thể tạo một khóa dịch vụ mới thay thế."
+            )
         return {
             "optimized_query": optimized_query,
-            "report": f"Đã xảy ra lỗi khi tìm kiếm tài liệu: {str(e)}",
+            "report": friendly_error,
             "sources": [],
             "queries": []
         }
