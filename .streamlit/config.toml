@@ -1,1 +1,10 @@
+[theme]
+base = "light"
+primaryColor = "#0f4c5c"          # Màu xanh Teal chủ đạo của Nobita
+backgroundColor = "#f7fafc"       # Màu nền sáng nhạt
+secondaryBackgroundColor = "#edf2f7" # Màu nền của sidebar
+textColor = "#1a202c"             # Màu chữ tối để dễ đọc trên nền sáng
 
+[client]
+# Vô hiệu hóa việc tự động chuyển đổi theme theo hệ điều hành của client
+forceDarkMode = false
