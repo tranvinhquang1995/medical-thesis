@@ -1,10 +1,13 @@
+# Cấu hình giao diện cứng Light Mode cho Streamlit
+# Hãy lưu file này vào đường dẫn thư mục: .streamlit/config.toml
+
 [theme]
 base = "light"
-primaryColor = "#0f4c5c"          # Màu xanh Teal chủ đạo của Nobita
+primaryColor = "#0f4c5c"          # Màu xanh Teal chủ đạo
 backgroundColor = "#f7fafc"       # Màu nền sáng nhạt
 secondaryBackgroundColor = "#edf2f7" # Màu nền của sidebar
 textColor = "#1a202c"             # Màu chữ tối để dễ đọc trên nền sáng
 
 [client]
-# Vô hiệu hóa việc tự động chuyển đổi theme theo hệ điều hành của client
+# Vô hiệu hóa việc tự động chuyển đổi theme theo hệ thống của máy client
 forceDarkMode = false
