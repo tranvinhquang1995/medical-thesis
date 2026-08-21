@@ -53,7 +53,7 @@ def translate_docx(file_path: str, output_path: str, direction: str, api_key: st
     def translate_block(text: str) -> str:
         if not text.strip():
             return text
-        prompt = f"Translate the following chunk from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\\n\\n{text}"
+        prompt = f"Translate the following chunk from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\n\n{text}"
         try:
             response = chat.send_message(prompt)
             return response.text.strip()
@@ -144,7 +144,7 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
         
         if text.strip():
             # Send text of the page as a single message to keep context page-by-page
-            prompt = f"Translate the following page {page_num + 1} from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\\n\\n{text}"
+            prompt = f"Translate the following page {page_num + 1} from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\n\n{text}"
             try:
                 response = chat.send_message(prompt)
                 translated_text = response.text.strip()
