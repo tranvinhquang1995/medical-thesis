@@ -27,7 +27,7 @@ def translate_docx(file_path: str, output_path: str, direction: str, api_key: st
     Uses a stateful Chat session for contextual coherence.
     """
     if not api_key:
-        raise ValueError("API Key is required.")
+        raise ValueError("Yêu cầu khóa API để thực hiện dịch file.")
         
     client = genai.Client(api_key=api_key)
     
@@ -58,22 +58,20 @@ def translate_docx(file_path: str, output_path: str, direction: str, api_key: st
             response = chat.send_message(prompt)
             return response.text.strip()
         except Exception as e:
-            st.error(f"Error in chat translation: {str(e)}")
+            st.error(f"Lỗi khi dịch đoạn văn: {str(e)}")
             return text
 
     # Translate paragraphs (main body)
     for i, paragraph in enumerate(doc.paragraphs):
         if paragraph.text.strip():
             # Save original run formatting if possible
-            original_runs_format = []
+            bold, italic, font_name, font_size = False, False, None, None
             if paragraph.runs:
                 first_run = paragraph.runs[0]
                 bold = first_run.bold
                 italic = first_run.italic
                 font_name = first_run.font.name
                 font_size = first_run.font.size
-            else:
-                bold, italic, font_name, font_size = False, False, None, None
                 
             translated_text = translate_block(paragraph.text)
             
@@ -114,7 +112,7 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
     Uses stateful Chat session.
     """
     if not api_key:
-        raise ValueError("API Key is required.")
+        raise ValueError("Yêu cầu khóa API để thực hiện dịch file.")
         
     client = genai.Client(api_key=api_key)
     
@@ -134,7 +132,7 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
     # Create a new Word document to store the translation
     doc = Document()
     doc.add_heading("BẢN DỊCH Y KHOA / MEDICAL TRANSLATION", level=1)
-    doc.add_paragraph("Tài liệu được dịch thuật tự động bằng ứng dụng Medical Thesis (Trí tuệ nhân tạo).")
+    doc.add_paragraph("Tài liệu được dịch tự động bằng ứng dụng Medical Thesis.")
     doc.add_paragraph(f"Chiều dịch: {direction}")
     doc.add_page_break()
     
@@ -152,7 +150,7 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
                 translated_text = response.text.strip()
                 
                 # Write paragraphs to DOCX
-                for p_text in translated_text.split('\\n\\n'):
+                for p_text in translated_text.split('\n\n'):
                     if p_text.strip():
                         doc.add_paragraph(p_text.strip())
             except Exception as e:
