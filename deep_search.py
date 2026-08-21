@@ -1,35 +1,36 @@
 import requests
 import json
+import streamlit as st
 from google import genai
 from google.genai import types
 
 SYSTEM_INSTRUCTION_DEEP = """
 You are a top-tier senior clinical researcher and medical academic.
-Your task is to write a highly detailed, comprehensive, and exhaustive literature review based on academic research papers.
+Your task is to write a highly detailed, comprehensive, and exhaustive literature review based on deep web research.
 
 Structure of the Deep Literature Review:
 1. Scientific Introduction: Establish the background, clinical significance, and current debate.
 2. Comprehensive Literature Review & Synthesis:
    - Organize into logical sub-topics/themes.
    - For each theme, synthesize findings from multiple papers, clinical guidelines (e.g., ACC/AHA, ESC, ADA, WHO), or clinical trials.
-   - Cite specific trials, researchers, or years mentioned in the source papers to make the report rigorous and believable.
+   - Cite specific trials, researchers, or years mentioned in the source web results to make the report rigorous and believable.
 3. Methodological and Clinical Gaps: What are the limitations of current studies, or what remains controversial?
 4. Future Research Directions & Clinical Practice Impact: Practical takeaway for clinicians.
 5. Rigorous References: Provide a detailed reference list with titles, active URLs, and brief annotations.
 
-Tone and Language: Professional, clinical, and precise. Use Vietnamese (the language of the user's thesis) to write the report.
+Tone and Language: Professional, clinical, and precise. Use the language of the user's query unless specified.
 """
 
 def optimize_search_prompt_with_gemini(user_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
     """
     Step 1: Uses Gemini to analyze the user's Vietnamese/English query,
-    translate and optimize it into a highly-specific English academic search query
+    translate it into an optimized, highly-specific English academic search query
     containing medical terminology, MeSH terms, and search operators.
     """
     client = genai.Client(api_key=api_key)
     system_prompt = (
         "You are a medical research expert. Translate and optimize the user's query into "
-        "a highly effective English search query for medical literature (like PubMed/Google Scholar/Semantic Scholar). "
+        "a highly effective English search query for medical literature (like PubMed/Google Scholar). "
         "Include medical keywords, scientific terminology, synonyms, and search syntax if useful. "
         "Return ONLY the optimized search string. No introduction, no quotes."
     )
@@ -44,13 +45,61 @@ def optimize_search_prompt_with_gemini(user_query: str, api_key: str, model_name
         )
         return response.text.strip()
     except Exception as e:
-        # Fallback to simple English translation
         return user_query
 
-def deep_search_with_semantic_scholar_v3(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash", limit: int = 5) -> dict:
+def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
+    """
+    Hybrid Deep Search: Uses Gemini 3.7 Flash with Google Search Grounding with optimized academic query.
+    """
+    client = genai.Client(api_key=api_key)
+    prompt = (
+        f"Hãy thực hiện một nghiên cứu y khoa chuyên sâu và viết một bài tổng quan tài liệu y học (Literature Review) "
+        f"chi tiết, chất lượng cao về chủ đề sau:\n\n{optimized_query}\n\n"
+        f"Hãy chắc chắn viết một bài viết hoàn chỉnh, khoa học, có cấu trúc học thuật rõ ràng, "
+        f"và sử dụng chú thích nguồn [1], [2]..."
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                system_instruction=SYSTEM_INSTRUCTION_DEEP,
+                temperature=0.3,
+                max_output_tokens=8192,
+            )
+        )
+        
+        grounding_metadata = getattr(response.candidates[0], 'grounding_metadata', None)
+        sources = []
+        if grounding_metadata:
+            grounding_chunks = getattr(grounding_metadata, 'grounding_chunks', [])
+            for chunk in grounding_chunks:
+                web = getattr(chunk, 'web', None)
+                if web:
+                    sources.append({
+                        "title": getattr(web, 'title', 'Tài liệu tìm thấy'),
+                        "url": getattr(web, 'uri', '')
+                    })
+                    
+        return {
+            "success": True,
+            "report": response.text,
+            "sources": sources,
+            "engine": "Gemini Deep Search Engine"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash", limit: int = 5, s2_api_key: str = None) -> dict:
     """
     Calls Semantic Scholar API to search for peer-reviewed papers, then feeds abstracts
     into Gemini to synthesize a structured y khoa Literature Review with active links.
+    Optionally supports x-api-key header for authenticated higher-limit calls.
     """
     url = "https://api.semanticscholar.org/graph/v1/paper/search"
     params = {
@@ -59,8 +108,12 @@ def deep_search_with_semantic_scholar_v3(optimized_query: str, api_key: str, mod
         "fields": "title,url,abstract,year,authors,citationCount,journal"
     }
     
+    headers = {}
+    if s2_api_key:
+        headers["x-api-key"] = s2_api_key
+    
     try:
-        response = requests.get(url, params=params, timeout=15)
+        response = requests.get(url, params=params, headers=headers, timeout=15)
         response.raise_for_status()
         data = response.json()
         papers = data.get("data", [])
@@ -86,7 +139,6 @@ def deep_search_with_semantic_scholar_v3(optimized_query: str, api_key: str, mod
             abstract = paper.get("abstract") or "Abstract not available."
             
             authors_list = paper.get("authors", [])
-            authors_str = ", \".join([a.get(\"name\", \"\") for a in authors_list[:3]])"
             authors_str = ", ".join([a.get("name", "") for a in authors_list[:3]])
             if len(authors_list) > 3:
                 authors_str += " et al."
