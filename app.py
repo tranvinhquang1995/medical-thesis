@@ -94,7 +94,7 @@ except Exception:
     pass
 
 # Default Model Selection (Handled in the background)
-model_choice = "gemini-2.5-flash"
+model_choice = "gemini-3.7-flash"
 
 # --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---
 if "current_tab" not in st.session_state:
