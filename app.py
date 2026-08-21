@@ -2,8 +2,8 @@ import os
 import streamlit as st
 from translator_text import translate_medical_text
 from translator_file import translate_docx, translate_pdf
-from lit_search import perform_literature_search
-from deep_search import optimize_search_prompt_with_gemini, deep_search_with_perplexity, deep_search_with_gemini
+from lit_search_v2 import perform_literature_search_v2
+from deep_search_v3 import optimize_search_prompt_with_gemini, deep_search_with_semantic_scholar_v3
 
 # Set page configuration
 st.set_page_config(
@@ -66,12 +66,6 @@ gemini_api_key = st.sidebar.text_input(
     "Gemini API Key (Bắt buộc)",
     type="password",
     help="Lấy API key tại Google AI Studio để kết nối với bộ não Gemini 3.7 Flash."
-)
-
-perplexity_api_key = st.sidebar.text_input(
-    "Perplexity API Key (Tùy chọn cho Tìm kiếm chuyên sâu)",
-    type="password",
-    help="Nhập API key của Perplexity AI nếu bạn muốn sử dụng mô hình Sonar Pro."
 )
 
 # Select Model
@@ -205,7 +199,7 @@ elif feature_tab == "📂 Dịch file Docx, PDF":
 # ----------------- FEATURE 3: LITERATURE SEARCH -----------------
 elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
     st.header("🔍 Tìm kiếm tài liệu khoa học và y văn")
-    st.write("Nhập từ khóa hoặc câu hỏi y học để Gemini thực hiện tìm kiếm học thuật trực tuyến thông qua Google Grounding. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
+    st.write("Nhập từ khóa hoặc câu hỏi y học để Gemini tối ưu hóa thành truy vấn song ngữ (Anh-Việt) và thực hiện tìm kiếm học thuật trực tuyến thông qua Google Search Grounding. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
     
     search_query = st.text_input("Nhập chủ đề hoặc từ khóa y văn cần tìm kiếm:", placeholder="Ví dụ: Thử nghiệm lâm sàng của thuốc Pembrolizumab trong điều trị ung thư phổi tế bào nhỏ...")
     
@@ -215,59 +209,56 @@ elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
         elif not search_query.strip():
             st.warning("Vui lòng nhập từ khóa tìm kiếm.")
         else:
-            with st.spinner("Gemini đang rà soát dữ liệu y học toàn cầu và tổng hợp báo cáo..."):
-                results = perform_literature_search(search_query, gemini_api_key, model_choice)
+            with st.status("Đang phân tích, tối ưu hóa truy vấn và tìm kiếm trực tuyến...", expanded=True) as status:
+                st.write("🔎 Đang phân tích từ khóa và tạo chuỗi tìm kiếm song ngữ Anh-Việt học thuật...")
+                results = perform_literature_search_v2(search_query, gemini_api_key, model_choice)
                 
-                st.markdown("### 📊 Báo cáo tổng hợp tài liệu học thuật:")
-                st.markdown(results["report"])
+                st.write(f"🔑 **Truy vấn học thuật song ngữ đã tối ưu:** `{results.get('optimized_query', '')}`")
+                st.write("🌍 Đang tổng hợp dữ liệu khoa học toàn cầu bằng Google Search Grounding...")
                 
-                # Show sources explicitly
-                if results["sources"]:
-                    st.markdown("---")
-                    st.markdown("### 🔗 Các nguồn tài liệu uy tín tìm thấy:")
-                    # Deduplicate sources
-                    seen = set()
-                    unique_sources = []
-                    for s in results["sources"]:
-                        if s["url"] not in seen:
-                            seen.add(s["url"])
-                            unique_sources.append(s)
-                            
-                    for idx, src in enumerate(unique_sources):
-                        st.markdown(f"**[{idx+1}]** [{src['title']}]({src['url']})")
-                else:
-                    st.info("Không phát hiện thêm nguồn cụ thể từ siêu dữ liệu.")
+                status.update(label="Tìm kiếm hoàn tất!", state="complete", expanded=False)
+                
+            st.markdown("### 📊 Báo cáo tổng hợp tài liệu học thuật:")
+            st.markdown(results["report"])
+            
+            # Show sources explicitly
+            if results["sources"]:
+                st.markdown("---")
+                st.markdown("### 🔗 Các nguồn tài liệu uy tín tìm thấy:")
+                # Deduplicate sources
+                seen = set()
+                unique_sources = []
+                for s in results["sources"]:
+                    if s["url"] not in seen:
+                        seen.add(s["url"])
+                        unique_sources.append(s)
+                        
+                for idx, src in enumerate(unique_sources):
+                    st.markdown(f"**[{idx+1}]** [{src['title']}]({src['url']})")
+            else:
+                st.info("Không phát hiện thêm nguồn cụ thể từ siêu dữ liệu.")
 
 # ----------------- FEATURE 4: DEEP SEARCH -----------------
 elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
-    st.header("💡 Tìm kiếm y học chuyên sâu & Phân tích thông minh")
-    st.write("Gemini sẽ phân tích câu hỏi của bạn, tối ưu hóa thành chuỗi từ khóa MeSH/Tiếng Anh chuyên sâu, sau đó tích hợp dịch vụ tìm kiếm y học cao cấp để đem về kết quả chính xác nhất.")
+    st.header("💡 Tìm kiếm y học chuyên sâu qua Semantic Scholar API")
+    st.write("Nhập từ khóa hoặc câu hỏi khóa luận của bạn. Gemini sẽ tối ưu hóa thành chuỗi từ khóa tiếng Anh chuyên sâu, tự động truy vấn cơ sở dữ liệu Semantic Scholar (200M+ bài báo peer-reviewed) và biên soạn bài báo cáo Literature Review hoàn chỉnh.")
     
     deep_query = st.text_area("Nhập yêu cầu nghiên cứu/câu hỏi khóa luận y văn của bạn:", height=100, placeholder="Ví dụ: Cơ chế tác dụng của vắc xin mRNA thế hệ mới trong việc phòng ngừa biến chủng SARS-CoV-2...")
     
-    search_mode = "Gemini Academic Search Engine"
-    if perplexity_api_key:
-        search_mode = st.radio("Chọn công cụ tìm kiếm y văn chuyên sâu:", ["Gemini Academic Search Engine (Mặc định)", "Perplexity AI API (Sonar Pro)"])
-        
     if st.button("Bắt đầu tìm kiếm chuyên sâu"):
         if not gemini_api_key:
             st.error("Vui lòng cấu hình Gemini API Key trước!")
         elif not deep_query.strip():
             st.warning("Vui lòng điền nội dung nghiên cứu.")
         else:
-            # Step 1: Optimize prompt using Gemini
-            with st.status("Đang phân tích và tối ưu hóa từ khóa chuyên ngành...", expanded=True) as status:
-                st.write("🤖 Đang dịch thuật và biên soạn sang thuật ngữ MeSH tiếng Anh...")
+            with st.status("Đang phân tích và truy xuất dữ liệu từ Semantic Scholar...", expanded=True) as status:
+                st.write("🤖 Đang biên soạn câu hỏi sang thuật ngữ MeSH tiếng Anh học thuật...")
                 optimized_eng_query = optimize_search_prompt_with_gemini(deep_query, gemini_api_key, model_choice)
-                st.write(f"🔑 **Từ khóa tiếng Anh chuyên sâu đã được tối ưu:** `{optimized_eng_query}`")
+                st.write(f"🔑 **Từ khóa tiếng Anh học thuật đã được tối ưu:** `{optimized_eng_query}`")
                 
-                st.write("🌍 Đang bắt đầu truy vấn chuyên sâu hệ thống cơ sở dữ liệu học thuật...")
+                st.write("📚 Đang truy vấn trực tiếp cơ sở dữ liệu bài báo peer-reviewed trên Semantic Scholar...")
+                results = deep_search_with_semantic_scholar_v3(optimized_eng_query, gemini_api_key, model_choice)
                 
-                if "Perplexity" in search_mode:
-                    results = deep_search_with_perplexity(optimized_eng_query, perplexity_api_key)
-                else:
-                    results = deep_search_with_gemini(optimized_eng_query, gemini_api_key, model_choice)
-                    
                 status.update(label="Truy xuất hoàn tất!", state="complete", expanded=False)
                 
             if results.get("success", False):
@@ -277,7 +268,7 @@ elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
                 # Show sources explicitly
                 if results["sources"]:
                     st.markdown("---")
-                    st.markdown("### 📚 Danh mục tài liệu tham khảo chính xác:")
+                    st.markdown("### 📚 Danh mục tài liệu tham khảo chính xác từ Semantic Scholar:")
                     seen = set()
                     unique_sources = []
                     for s in results["sources"]:
