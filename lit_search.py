@@ -17,7 +17,7 @@ Requirements:
 4. Citation Integrity: Use inline citations [1], [2], etc., corresponding to the sources. Do NOT hallucinate sources. Only cite what was actually retrieved.
 """
 
-def optimize_bilingual_search_prompt(user_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
+def optimize_bilingual_search_prompt(user_query: str, api_key: str, model_name: str = "gemini-3.7-flash") -> str:
     """
     Analyzes the user's Vietnamese/English query,
     translates and expands it into a highly effective bilingual (English and Vietnamese)
@@ -46,7 +46,7 @@ def optimize_bilingual_search_prompt(user_query: str, api_key: str, model_name: 
     except Exception as e:
         return f"{user_query} medical literature clinical trials"
 
-def perform_literature_search(query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
+def perform_literature_search(query: str, api_key: str, model_name: str = "gemini-3.7-flash") -> dict:
     """
     Performs literature search using an AI engine with web search grounding.
     Returns a dictionary with the structured text report, the optimized query, and list of source chunks with links.
