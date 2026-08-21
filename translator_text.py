@@ -24,7 +24,7 @@ Rules for Translation:
 4. Output: Return ONLY the translated text. Do not add conversational preambles, comments, or explanations.
 """
 
-def translate_medical_text(text: str, direction: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
+def translate_medical_text(text: str, direction: str, api_key: str, model_name: str = "gemini-3.7-flash") -> str:
     """
     Translates medical text between English and Vietnamese.
     direction: 'EN -> VI' or 'VI -> EN'
