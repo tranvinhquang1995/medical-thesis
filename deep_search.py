@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -54,7 +55,7 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
     client = genai.Client(api_key=api_key)
     prompt = (
         f"Hãy thực hiện một nghiên cứu y khoa chuyên sâu và viết một bài tổng quan tài liệu y học (Literature Review) "
-        f"chi tiết, chất lượng cao về chủ đề sau:\n\n{optimized_query}\n\n"
+        f"chi tiết, chất lượng cao về chủ đề sau:\\n\\n{optimized_query}\\n\\n"
         f"Hãy chắc chắn viết một bài viết hoàn chỉnh, khoa học, có cấu trúc học thuật rõ ràng, "
         f"và sử dụng chú thích nguồn [1], [2]..."
     )
@@ -90,15 +91,27 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
             "engine": "Công cụ phân tích dữ liệu mạng chuyên sâu"
         }
     except Exception as e:
+        error_msg = str(e)
+        friendly_error = f"Lỗi hệ thống: {error_msg}"
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+            friendly_error = (
+                "⚠️ **Giới hạn yêu cầu đã vượt hạn mức (Lỗi 429 - Hạn mức dịch vụ):**\n\n"
+                "Khóa dịch vụ hiện tại đã tạm thời vượt quá tần suất yêu cầu tối đa trong một phút hoặc hạn mức ngày của phiên bản Trí tuệ nhân tạo (AI).\n\n"
+                "**Cách khắc phục:**\n"
+                "- Vui lòng đợi **1-2 phút** rồi nhấn nút thử lại.\n"
+                "- Nếu bạn đang deploy ứng dụng, hãy đảm bảo đã thiết lập chính xác khóa cá nhân trong cấu hình bảo mật `secrets.toml` để tránh dùng chung tài khoản bị giới hạn.\n"
+                "- Hoặc bạn có thể tạo một khóa dịch vụ mới thay thế."
+            )
         return {
             "success": False,
-            "error": str(e)
+            "error": friendly_error
         }
 
 def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name: str = "gemini-3.7-flash", limit: int = 5, db_api_key: str = None) -> dict:
     """
     Calls international academic database API to search for peer-reviewed papers, then feeds abstracts
     into AI to synthesize a structured Literature Review with active links.
+    Includes an automatic retry mechanism with exponential backoff on HTTP 429.
     """
     url = "https://api.semanticscholar.org/graph/v1/paper/search"
     params = {
@@ -111,9 +124,33 @@ def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name:
     if db_api_key:
         headers["x-api-key"] = db_api_key
     
+    # Retry logic for rate-limiting
+    response = None
+    last_exception = None
+    for attempt in range(3):
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=15)
+            if response.status_code == 429:
+                # Exponential backoff
+                wait_time = 2 * (attempt + 1)
+                time.sleep(wait_time)
+                continue
+            response.raise_for_status()
+            break
+        except Exception as retry_e:
+            last_exception = retry_e
+            wait_time = 1 * (attempt + 1)
+            time.sleep(wait_time)
+            
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=15)
-        response.raise_for_status()
+        if response is None or response.status_code != 200:
+            if response is not None:
+                response.raise_for_status()
+            elif last_exception is not None:
+                raise last_exception
+            else:
+                raise requests.exceptions.RequestException("Không thể thiết lập kết nối đến cơ sở dữ liệu.")
+                
         data = response.json()
         papers = data.get("data", [])
         
@@ -192,7 +229,22 @@ def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name:
         }
         
     except Exception as e:
+        error_msg = str(e)
+        friendly_error = f"Lỗi hệ thống: {error_msg}"
+        if "429" in error_msg:
+            friendly_error = (
+                "⚠️ **Từ chối truy cập do tần suất yêu cầu cao (Lỗi 429 - Giới hạn hệ thống học thuật):**\n\n"
+                "Hệ thống cơ sở dữ liệu học thuật quốc tế đã tạm thời từ chối yêu cầu từ địa chỉ IP này do tần suất truy cập vượt quá giới hạn cho phép miễn phí.\n\n"
+                "**Cách khắc phục:**\n"
+                "- Vui lòng đợi **1-2 phút** rồi nhấn nút thử lại.\n"
+                "- Lỗi này thường xảy ra khi dùng chung địa chỉ IP máy chủ (ví dụ máy chủ Streamlit Cloud). Để khắc phục triệt để và tăng tốc độ xử lý, bạn hãy cấu hình **Cơ sở dữ liệu học thuật Key** (API Key của Semantic Scholar) miễn phí trong phần Secrets."
+            )
+        elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
+            friendly_error = (
+                "⚠️ **Lỗi kết nối cơ sở dữ liệu học thuật:**\n\n"
+                "Không thể kết nối đến cơ sở dữ liệu học thuật quốc tế vào lúc này. Vui lòng kiểm tra lại kết nối mạng của bạn và thử lại sau."
+            )
         return {
             "success": False,
-            "error": str(e)
+            "error": friendly_error
         }
