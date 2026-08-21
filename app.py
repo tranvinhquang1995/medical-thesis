@@ -13,9 +13,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Medical Theme (Teal and Blue)
+# Custom CSS for Medical Theme (Teal and Blue) + Lock UI (Hide Streamlit menu, header, and footer)
 st.markdown("""
 <style>
+    /* Hide Streamlit elements to white-label the app */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    div.stDeployButton {display: none;}
+    
     .main {
         background-color: #f7fafc;
     }
@@ -37,6 +43,7 @@ st.markdown("""
         font-weight: 600;
         border: none;
         transition: background-color 0.3s;
+        width: 100%;
     }
     .stButton>button:hover {
         background-color: #fb8b24;
@@ -66,8 +73,7 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- BACKGROUND SECRETS & KEY INGESTION (Zero UI Clutter) ---
-gemini_api_key = ""
+# --- BACKGROUND SECRETS & KEY INGESTION (Zero UI Clutter) ---\ngemini_api_key = ""
 s2_api_key = ""
 
 try:
@@ -89,8 +95,7 @@ except Exception:
 # Default Model Selection (Handled in the background)
 model_choice = "gemini-2.5-flash"
 
-# --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---
-if "current_tab" not in st.session_state:
+# --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---\nif "current_tab" not in st.session_state:
     st.session_state.current_tab = "📝 Dịch thuật văn bản"
 
 st.sidebar.markdown("<h4 style='color: #0f4c5c; font-weight: 600; margin-bottom: 10px;'>📋 CHỨC NĂNG ỨNG DỤNG</h4>", unsafe_allow_html=True)
@@ -151,7 +156,7 @@ if not gemini_api_key:
         <pre>GEMINI_API_KEY = "Khóa_API_Của_Bạn"</pre>
     </div>
     """, unsafe_allow_html=True)
-    st.info("Để lấy khóa dịch vụ miễn phí, vui lòng truy cập [AI Studio](https://aistudio.google.com/).")
+    st.info("Để cấu hình khóa dịch vụ hệ thống, vui lòng liên hệ Nobita hoặc xem tài liệu hướng dẫn.")
     st.stop()
 
 # --- FUNCTIONALITIES DISPATCH ---
