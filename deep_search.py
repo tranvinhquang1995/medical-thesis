@@ -21,10 +21,10 @@ Structure of the Deep Literature Review:
 Tone and Language: Professional, clinical, and precise. Use the language of the user's query unless specified.
 """
 
-def optimize_search_prompt_with_gemini(user_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
+def optimize_search_prompt(user_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> str:
     """
-    Step 1: Uses Gemini to analyze the user's Vietnamese/English query,
-    translate it into an optimized, highly-specific English academic search query
+    Analyzes the user's Vietnamese/English query,
+    translates and expands it into an optimized, highly-specific English academic search query
     containing medical terminology, MeSH terms, and search operators.
     """
     client = genai.Client(api_key=api_key)
@@ -49,12 +49,12 @@ def optimize_search_prompt_with_gemini(user_query: str, api_key: str, model_name
 
 def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
     """
-    Hybrid Deep Search: Uses Gemini 3.7 Flash with Google Search Grounding with optimized academic query.
+    Hybrid Deep Search: Uses AI Engine with Google Search Grounding with optimized academic query.
     """
     client = genai.Client(api_key=api_key)
     prompt = (
         f"Hãy thực hiện một nghiên cứu y khoa chuyên sâu và viết một bài tổng quan tài liệu y học (Literature Review) "
-        f"chi tiết, chất lượng cao về chủ đề sau:\n\n{optimized_query}\n\n"
+        f"chi tiết, chất lượng cao về chủ đề sau:\\n\\n{optimized_query}\\n\\n"
         f"Hãy chắc chắn viết một bài viết hoàn chỉnh, khoa học, có cấu trúc học thuật rõ ràng, "
         f"và sử dụng chú thích nguồn [1], [2]..."
     )
@@ -87,7 +87,7 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
             "success": True,
             "report": response.text,
             "sources": sources,
-            "engine": "Gemini Deep Search Engine"
+            "engine": "Hệ thống Phân tích Chuyên sâu AI"
         }
     except Exception as e:
         return {
@@ -95,11 +95,10 @@ def deep_search_with_gemini(optimized_query: str, api_key: str, model_name: str 
             "error": str(e)
         }
 
-def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash", limit: int = 5, s2_api_key: str = None) -> dict:
+def deep_search_with_academic_db(optimized_query: str, api_key: str, model_name: str = "gemini-2.5-flash", limit: int = 5, db_api_key: str = None) -> dict:
     """
-    Calls Semantic Scholar API to search for peer-reviewed papers, then feeds abstracts
-    into Gemini to synthesize a structured y khoa Literature Review with active links.
-    Optionally supports x-api-key header for authenticated higher-limit calls.
+    Calls international academic database API to search for peer-reviewed papers, then feeds abstracts
+    into AI Engine to synthesize a structured y khoa Literature Review with active links.
     """
     url = "https://api.semanticscholar.org/graph/v1/paper/search"
     params = {
@@ -109,8 +108,8 @@ def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_
     }
     
     headers = {}
-    if s2_api_key:
-        headers["x-api-key"] = s2_api_key
+    if db_api_key:
+        headers["x-api-key"] = db_api_key
     
     try:
         response = requests.get(url, params=params, headers=headers, timeout=15)
@@ -121,9 +120,9 @@ def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_
         if not papers:
             return {
                 "success": True,
-                "report": f"Không tìm thấy bài báo y khoa nào khớp với từ khóa '{optimized_query}' trên cơ sở dữ liệu Semantic Scholar.",
+                "report": f"Không tìm thấy bài báo y khoa nào khớp với từ khóa '{optimized_query}' trên cơ sở dữ liệu học thuật quốc tế.",
                 "sources": [],
-                "engine": "Semantic Scholar API"
+                "engine": "Cơ sở dữ liệu học thuật quốc tế"
             }
             
         papers_context = ""
@@ -149,29 +148,29 @@ def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_
             })
             
             papers_context += (
-                f"Paper [{idx + 1}]:\n"
-                f"- Title: {title}\n"
-                f"- Authors: {authors_str}\n"
-                f"- Year: {year}\n"
-                f"- Journal: {journal_name}\n"
-                f"- Citations: {citation_count}\n"
-                f"- URL: {paper_url}\n"
-                f"- Abstract: {abstract}\n\n"
+                f"Paper [{idx + 1}]:\\n"
+                f"- Title: {title}\\n"
+                f"- Authors: {authors_str}\\n"
+                f"- Year: {year}\\n"
+                f"- Journal: {journal_name}\\n"
+                f"- Citations: {citation_count}\\n"
+                f"- URL: {paper_url}\\n"
+                f"- Abstract: {abstract}\\n\\n"
             )
             
-        # Synthesize with Gemini
+        # Synthesize with AI Engine
         client = genai.Client(api_key=api_key)
         prompt = (
             f"Dưới đây là {len(papers)} bài báo khoa học đã qua bình duyệt (peer-reviewed) "
-            f"được tìm thấy trên hệ thống Semantic Scholar cho truy vấn '{optimized_query}':\n\n"
-            f"{papers_context}\n"
+            f"được tìm thấy trên hệ thống cơ sở dữ liệu học thuật quốc tế cho truy vấn '{optimized_query}':\\n\\n"
+            f"{papers_context}\\n"
             f"Nhiệm vụ của bạn là đóng vai trò một giáo sư đầu ngành, viết một bài Tổng quan tài liệu y học (Literature Review) "
-            f"bằng tiếng Việt chi tiết và khoa học dựa TRÊN VĂN BẢN của các bài báo trên.\n\n"
-            f"Yêu cầu:\n"
-            f"1. Bài viết phải có bố cục rõ ràng (Đặt vấn đề, Tổng quan & Phân tích chuyên sâu các nghiên cứu trên, So sánh/Đối chiếu, Khoảng trống nghiên cứu & Đề xuất thực hành lâm sàng).\n"
-            f"2. BẮT BUỘC chỉ sử dụng thông tin từ các bài báo được cung cấp ở trên. Trích dẫn chính xác bằng số [1], [2]... tương ứng với mã số bài báo.\n"
-            f"3. Trong mỗi đoạn phân tích, hãy cố gắng liên kết và tổng hợp thông tin từ nhiều bài báo cùng lúc để thấy được sự thống nhất hoặc khác biệt trong kết quả của các nghiên cứu.\n"
-            f"4. Giữ nguyên thuật ngữ y khoa chuyên ngành, tên thuốc và các chữ viết tắt.\n"
+            f"bằng tiếng Việt chi tiết và khoa học dựa TRÊN VĂN BẢN của các bài báo trên.\\n\\n"
+            f"Yêu cầu:\\n"
+            f"1. Bài viết phải có bố cục rõ ràng (Đặt vấn đề, Tổng quan & Phân tích chuyên sâu các nghiên cứu trên, So sánh/Đối chiếu, Khoảng trống nghiên cứu & Đề xuất thực hành lâm sàng).\\n"
+            f"2. BẮT BUỘC chỉ sử dụng thông tin từ các bài báo được cung cấp ở trên. Trích dẫn chính xác bằng số [1], [2]... tương ứng với mã số bài báo.\\n"
+            f"3. Trong mỗi đoạn phân tích, hãy cố gắng liên kết và tổng hợp thông tin từ nhiều bài báo cùng lúc để thấy được sự thống nhất hoặc khác biệt trong kết quả của các nghiên cứu.\\n"
+            f"4. Giữ nguyên thuật ngữ y khoa chuyên ngành, tên thuốc và các chữ viết tắt.\\n"
             f"5. Đưa ra một phần tài liệu tham khảo liệt kê đầy đủ tiêu đề, năm xuất bản, tác giả và đường link URL của cả {len(papers)} bài báo trên."
         )
         
@@ -189,7 +188,7 @@ def deep_search_with_semantic_scholar(optimized_query: str, api_key: str, model_
             "success": True,
             "report": response.text,
             "sources": sources,
-            "engine": f"Semantic Scholar API + {model_name} Synthesizer"
+            "engine": "Hệ thống AI & Cơ sở dữ liệu học thuật quốc tế"
         }
         
     except Exception as e:
