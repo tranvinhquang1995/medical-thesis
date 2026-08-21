@@ -30,7 +30,7 @@ def translate_medical_text(text: str, direction: str, api_key: str, model_name: 
     direction: 'EN -> VI' or 'VI -> EN'
     """
     if not api_key:
-        raise ValueError("API Key is required to run the translation.")
+        raise ValueError("Yêu cầu nhập khóa dịch vụ để thực hiện dịch thuật.")
     
     if not text.strip():
         return ""
@@ -38,7 +38,7 @@ def translate_medical_text(text: str, direction: str, api_key: str, model_name: 
     try:
         client = genai.Client(api_key=api_key)
         
-        prompt = f"Please translate the following text from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}. Remember to strictly follow the medical translation rules (keep drug names, rare diseases, and abbreviations in English, but translate common conditions naturally):\\n\\n{text}"
+        prompt = f"Please translate the following text from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}. Remember to strictly follow the medical translation rules (keep drug names, rare diseases, and abbreviations in English, but translate common conditions naturally):\n\n{text}"
         
         response = client.models.generate_content(
             model=model_name,
@@ -51,4 +51,4 @@ def translate_medical_text(text: str, direction: str, api_key: str, model_name: 
         )
         return response.text
     except Exception as e:
-        return f"Error during translation: {str(e)}"
+        return f"Đã xảy ra lỗi trong quá trình dịch thuật: {str(e)}"
