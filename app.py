@@ -16,11 +16,20 @@ st.set_page_config(
 # Custom CSS for Medical Theme (Teal and Blue) + Lock UI (Hide Streamlit menu, header, and footer)
 st.markdown("""
 <style>
-    /* Hide Streamlit elements to white-label the app */
+    /* Hide Streamlit elements to white-label the app but keep sidebar control */
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    div[data-testid="stMainMenu"] {visibility: hidden;}
+    div[data-testid="stActionButton"] {visibility: hidden;}
+    .stDeployButton {display: none;}
     div.stDeployButton {display: none;}
+    
+    /* Đảm bảo nút mở rộng/thu nhỏ sidebar vẫn hiển thị và hoạt động */
+    div[data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
+    
+    footer {visibility: hidden;}
     
     .main {
         background-color: #f7fafc;
