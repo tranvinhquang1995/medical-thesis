@@ -45,9 +45,9 @@ st.markdown("""
     .api-warning {
         background-color: #fff3cd;
         color: #856404;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 15px;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
         border: 1px solid #ffeeba;
     }
 </style>
@@ -57,71 +57,77 @@ st.markdown("""
 st.title("🏥 Medical Thesis - Trợ Lý Nghiên Cứu Y Khoa")
 st.markdown("---")
 
-# Sidebar Configuration
-st.sidebar.image("https://img.icons8.com/illustrations/external-doctor-working-from-home-flat-flat-medical-illustration/256/external-doctor-working-from-home-flat-flat-medical-illustration.png", width=150)
-st.sidebar.title("Cấu hình hệ thống")
+# Sidebar - Elegant Visual Header (Using emojis and CSS - NO external broken images!)
+st.sidebar.markdown("""
+<div style='text-align: center; margin-top: -20px;'>
+    <span style='font-size: 5rem;'>🏥</span>
+    <h2 style='color: #0f4c5c; font-size: 1.6rem; margin-top: 10px; margin-bottom: 5px; font-weight: 700;'>Medical Thesis</h2>
+    <p style='color: #888888; font-size: 0.9rem; font-style: italic; margin-bottom: 25px;'>Trợ lý khoa học chuyên nghiệp</p>
+</div>
+""", unsafe_allow_html=True)
 
-# --- STREAMLIT SECRETS INTEGRATION ---
-# Attempt to read keys from Streamlit Secrets automatically
-secrets_gemini = ""
-secrets_s2 = ""
+# --- BACKGROUND SECRETS & KEY INGESTION (Zero UI Clutter) ---
+gemini_api_key = ""
+s2_api_key = ""
 
 try:
     if "GEMINI_API_KEY" in st.secrets:
-        secrets_gemini = st.secrets["GEMINI_API_KEY"]
+        gemini_api_key = st.secrets["GEMINI_API_KEY"]
     elif "gemini_api_key" in st.secrets:
-        secrets_gemini = st.secrets["gemini_api_key"]
+        gemini_api_key = st.secrets["gemini_api_key"]
 except Exception:
     pass
 
 try:
     if "SEMANTIC_SCHOLAR_API_KEY" in st.secrets:
-        secrets_s2 = st.secrets["SEMANTIC_SCHOLAR_API_KEY"]
+        s2_api_key = st.secrets["SEMANTIC_SCHOLAR_API_KEY"]
     elif "semantic_scholar_api_key" in st.secrets:
-        secrets_s2 = st.secrets["semantic_scholar_api_key"]
+        s2_api_key = st.secrets["semantic_scholar_api_key"]
 except Exception:
     pass
 
-# API Keys Ingestion UI (Auto-filled if present in Secrets)
-gemini_api_key = st.sidebar.text_input(
-    "Hệ thống AI Key (Bắt buộc)",
-    value=secrets_gemini,
-    type="password",
-    help="Lấy API key tại trang cung cấp khóa dịch vụ AI Studio. Tự động lấy từ Secrets nếu đã được cấu hình."
-)
+# Default Model Selection (Handled in the background)
+model_choice = "gemini-2.5-flash"
 
-s2_api_key = st.sidebar.text_input(
-    "Cơ sở dữ liệu học thuật Key (Tùy chọn)",
-    value=secrets_s2,
-    type="password",
-    help="Không bắt buộc do cơ sở dữ liệu học thuật quốc tế được dùng miễn phí. Điền vào nếu bạn muốn nâng tốc độ/hạn mức truy cập."
-)
+# --- SIDEBAR TAB NAVIGATION (Using beautiful, highlighted buttons) ---
+if "current_tab" not in st.session_state:
+    st.session_state.current_tab = "📝 Dịch thuật văn bản"
 
-# Select Model UI Mapping to hide underlying models
-model_display = {
-    "AI Engine - Flash (Khuyên dùng)": "gemini-2.5-flash",
-    "AI Engine - Pro (Chuyên sâu)": "gemini-2.5-pro",
-    "AI Engine - Lite (Tốc độ)": "gemini-1.5-flash"
-}
+st.sidebar.markdown("<h4 style='color: #0f4c5c; font-weight: 600; margin-bottom: 10px;'>📋 CHỨC NĂNG ỨNG DỤNG</h4>", unsafe_allow_html=True)
 
-selected_model_ui = st.sidebar.selectbox(
-    "Chọn phiên bản Trí tuệ nhân tạo (AI Version)",
-    list(model_display.keys()),
-    index=0,
-    help="Mặc định là phiên bản Flash - có hiệu năng cực kỳ tốt, tốc độ phản hồi nhanh."
-)
-model_choice = model_display[selected_model_ui]
+# Four interactive buttons for navigation
+btn_text = "📝 Dịch thuật văn bản"
+btn_file = "📂 Dịch file Docx, PDF"
+btn_lit = "🔍 Tìm kiếm tài liệu"
+btn_deep = "💡 Tìm kiếm chuyên sâu"
 
-# Features Navigation
-feature_tab = st.sidebar.radio(
-    "Chọn tính năng sử dụng:",
-    [
-        "📝 Dịch thuật văn bản y khoa",
-        "📂 Dịch file Docx, PDF",
-        "🔍 Tìm kiếm tài liệu khoa học",
-        "💡 Tìm kiếm tài liệu chuyên sâu"
-    ]
-)
+if st.sidebar.button(
+    btn_text, 
+    use_container_width=True, 
+    type="primary" if st.session_state.current_tab == btn_text else "secondary"
+):
+    st.session_state.current_tab = btn_text
+
+if st.sidebar.button(
+    btn_file, 
+    use_container_width=True, 
+    type="primary" if st.session_state.current_tab == btn_file else "secondary"
+):
+    st.session_state.current_tab = btn_file
+
+if st.sidebar.button(
+    btn_lit, 
+    use_container_width=True, 
+    type="primary" if st.session_state.current_tab == btn_lit else "secondary"
+):
+    st.session_state.current_tab = btn_lit
+
+if st.sidebar.button(
+    btn_deep, 
+    use_container_width=True, 
+    type="primary" if st.session_state.current_tab == btn_deep else "secondary"
+):
+    st.session_state.current_tab = btn_deep
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
@@ -136,18 +142,21 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# Check API Key
+# Check API Key and halt main execution if missing
 if not gemini_api_key:
     st.markdown("""
     <div class="api-warning">
-        ⚠️ <strong>Yêu cầu cấu hình:</strong> Vui lòng nhập <strong>Hệ thống AI Key</strong> ở thanh bên trái hoặc cấu hình trong <strong>Streamlit Secrets</strong> để bắt đầu sử dụng tất cả các tính năng của ứng dụng.
+        ⚠️ <strong>Yêu cầu cấu hình:</strong> Không tìm thấy <strong>Khóa dịch vụ chính (GEMINI_API_KEY)</strong> trong hệ thống secrets.<br>
+        Vui lòng tạo tệp tin <code>.streamlit/secrets.toml</code> trong thư mục dự án của bạn và cấu hình như sau:<br>
+        <pre>GEMINI_API_KEY = "Khóa_API_Của_Bạn"</pre>
     </div>
     """, unsafe_allow_html=True)
-    st.info("Nếu chưa có API Key, bạn có thể đăng ký miễn phí tại [AI Studio](https://aistudio.google.com/).")
+    st.info("Để lấy khóa dịch vụ miễn phí, vui lòng truy cập [AI Studio](https://aistudio.google.com/).")
+    st.stop()
 
-# ----------------- FEATURE 1: TEXT TRANSLATION -----------------
-if feature_tab == "📝 Dịch thuật văn bản y khoa":
-    st.header("📝 Dịch thuật văn bản y khoa chuyên ngành")
+# --- FUNCTIONALITIES DISPATCH ---
+if st.session_state.current_tab == btn_text:
+    st.header("📝 Dịch thuật văn bản chuyên ngành")
     st.write("Sử dụng AI dịch thuật tối ưu hóa cho lĩnh vực y tế, giữ nguyên thuật ngữ viết tắt, biệt dược và tên thuốc.")
     
     col1, col2 = st.columns(2)
@@ -159,9 +168,7 @@ if feature_tab == "📝 Dịch thuật văn bản y khoa":
     src_text = st.text_area("Nhập văn bản cần dịch:", height=250, placeholder="Nhập câu hoặc đoạn văn y khoa vào đây...")
     
     if st.button("Bắt đầu dịch"):
-        if not gemini_api_key:
-            st.error("Vui lòng cấu hình Hệ thống AI Key trước!")
-        elif not src_text.strip():
+        if not src_text.strip():
             st.warning("Vui lòng nhập văn bản cần dịch.")
         else:
             with st.spinner("Đang tiến hành dịch thuật chuẩn y văn..."):
@@ -177,24 +184,17 @@ if feature_tab == "📝 Dịch thuật văn bản y khoa":
                     mime="text/plain"
                 )
 
-# ----------------- FEATURE 2: FILE TRANSLATION -----------------
-elif feature_tab == "📂 Dịch file Docx, PDF":
+elif st.session_state.current_tab == btn_file:
     st.header("📂 Dịch thuật tài liệu y khoa (DOCX, PDF)")
-    st.write("Dịch thuật toàn bộ file tài liệu y văn, giữ nguyên cấu trúc định dạng cơ bản và đảm bảo tính thống nhất ngữ cảnh thông qua *Stateful Chat Session*.")
+    st.write("Dịch thuật toàn bộ file tài liệu, giữ nguyên cấu trúc định dạng cơ bản và đảm bảo tính thống nhất ngữ cảnh thông qua hệ thống dịch thuật chuỗi.")
     
     direction = st.selectbox("Chọn chiều dịch file:", ["EN -> VI", "VI -> EN"], index=0)
-    
     uploaded_file = st.file_uploader("Tải lên file tài liệu (chấp nhận .docx, .pdf):", type=["docx", "pdf"])
     
     if uploaded_file is not None:
-        file_details = {"FileName": uploaded_file.name, "FileType": uploaded_file.type}
         st.write(f"📁 Đang chọn file: **{uploaded_file.name}**")
         
         if st.button("Dịch file tài liệu"):
-            if not gemini_api_key:
-                st.error("Vui lòng cấu hình Hệ thống AI Key trước!")
-                st.stop()
-                
             # Create scratch directories
             os.makedirs("/workspace/scratch/downloads", exist_ok=True)
             
@@ -228,7 +228,7 @@ elif feature_tab == "📂 Dịch file Docx, PDF":
                     st.success("Tài liệu của bạn đã dịch thành công!")
                     
                     with open(temp_output_path, "rb") as file:
-                        btn = st.download_button(
+                        st.download_button(
                             label="📥 Tải xuống bản dịch (.docx)",
                             data=file,
                             file_name=output_filename,
@@ -240,20 +240,17 @@ elif feature_tab == "📂 Dịch file Docx, PDF":
             except Exception as e:
                 st.error(f"Đã xảy ra lỗi trong quá trình xử lý file: {str(e)}")
 
-# ----------------- FEATURE 3: LITERATURE SEARCH -----------------
-elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
-    st.header("🔍 Tìm kiếm tài liệu khoa học và y văn")
-    st.write("Nhập từ khóa hoặc câu hỏi y học để hệ thống thực hiện tìm kiếm học thuật trực tuyến. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
+elif st.session_state.current_tab == btn_lit:
+    st.header("🔍 Tìm kiếm tài liệu học thuật")
+    st.write("Nhập từ khóa hoặc câu hỏi y học để hệ thống thực hiện tìm kiếm học thuật trực tuyến song ngữ Anh - Việt. Kết quả trả ra cam kết kèm theo nguồn gốc rõ ràng.")
     
-    search_query = st.text_input("Nhập chủ đề hoặc từ khóa y văn cần tìm kiếm:", placeholder="Ví dụ: Thử nghiệm lâm sàng của thuốc Pembrolizumab trong điều trị ung thư phổi tế bào nhỏ...")
+    search_query = st.text_input("Nhập chủ đề hoặc từ khóa y văn cần tìm kiếm:", placeholder="Ví dụ: Thử nghiệm lâm sàng của thuốc điều trị ung thư phổi...")
     
     if st.button("Tìm kiếm tài liệu"):
-        if not gemini_api_key:
-            st.error("Vui lòng cấu hình Hệ thống AI Key trước!")
-        elif not search_query.strip():
+        if not search_query.strip():
             st.warning("Vui lòng nhập từ khóa tìm kiếm.")
         else:
-            with st.spinner("Hệ thống đang rà soát dữ liệu y học toàn cầu và tổng hợp báo cáo..."):
+            with st.spinner("Hệ thống đang rà soát dữ liệu khoa học toàn cầu và tổng hợp báo cáo..."):
                 results = perform_literature_search(search_query, gemini_api_key, model_choice)
                 
                 st.markdown("### 📊 Báo cáo tổng hợp tài liệu học thuật:")
@@ -276,26 +273,22 @@ elif feature_tab == "🔍 Tìm kiếm tài liệu khoa học":
                 else:
                     st.info("Không phát hiện thêm nguồn cụ thể từ siêu dữ liệu.")
 
-# ----------------- FEATURE 4: DEEP SEARCH (ACADEMIC DATABASE) -----------------
-elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
-    st.header("💡 Tìm kiếm y học chuyên sâu qua Cơ sở dữ liệu học thuật")
-    st.write("Hệ thống AI sẽ tối ưu hóa từ khóa của bạn thành chuỗi tiếng Anh chuyên sâu, sau đó trực tiếp truy vấn cơ sở dữ liệu học thuật khổng lồ và lập báo cáo nghiên cứu tổng quan khoa học.")
+elif st.session_state.current_tab == btn_deep:
+    st.header("💡 Tìm kiếm tài liệu chuyên sâu")
+    st.write("Hệ thống AI sẽ tự động phân tích câu hỏi, tối ưu hóa thành thuật ngữ tiếng Anh chuyên môn quốc tế và tiến hành truy cập trực tiếp cơ sở dữ liệu để tổng hợp báo cáo y văn chất lượng cao.")
     
-    deep_query = st.text_area("Nhập yêu cầu nghiên cứu/câu hỏi khóa luận y văn của bạn:", height=100, placeholder="Ví dụ: Cơ chế tác dụng của vắc xin mRNA thế hệ mới trong việc phòng ngừa biến chủng SARS-CoV-2...")
+    deep_query = st.text_area("Nhập yêu cầu nghiên cứu/câu hỏi khóa luận y văn của bạn:", height=100, placeholder="Ví dụ: Cơ chế tác dụng của vắc xin mRNA trong phòng ngừa biến chủng...")
     
     if st.button("Bắt đầu tìm kiếm chuyên sâu"):
-        if not gemini_api_key:
-            st.error("Vui lòng cấu hình Hệ thống AI Key trước!")
-        elif not deep_query.strip():
+        if not deep_query.strip():
             st.warning("Vui lòng điền nội dung nghiên cứu.")
         else:
-            # Step 1: Optimize prompt using AI Engine
             with st.status("Đang phân tích và tối ưu hóa từ khóa chuyên ngành...", expanded=True) as status:
-                st.write("🤖 Đang dịch thuật và biên soạn sang thuật ngữ MeSH tiếng Anh...")
+                st.write("🤖 Đang dịch thuật và biên soạn sang thuật ngữ tiếng Anh chuyên môn...")
                 optimized_eng_query = optimize_search_prompt(deep_query, gemini_api_key, model_choice)
-                st.write(f"🔑 **Từ khóa tiếng Anh chuyên sâu đã được tối ưu:** `{optimized_eng_query}`")
+                st.write(f"🔑 **Từ khóa chuyên sâu đã được tối ưu:** `{optimized_eng_query}`")
                 
-                st.write("🌍 Đang bắt đầu truy vấn chuyên sâu cơ sở dữ liệu học thuật...")
+                st.write("🌍 Đang truy cập và khai thác cơ sở dữ liệu học thuật quốc tế...")
                 
                 # Call search with academic db
                 results = deep_search_with_academic_db(
@@ -308,7 +301,7 @@ elif feature_tab == "💡 Tìm kiếm tài liệu chuyên sâu":
                 status.update(label="Truy xuất hoàn tất!", state="complete", expanded=False)
                 
             if results.get("success", False):
-                st.markdown(f"### 🛡️ Báo cáo Tổng quan tài liệu y văn từ **{results['engine']}**:")
+                st.markdown(f"### 🛡️ Báo cáo Tổng quan tài liệu y văn chuyên sâu:")
                 st.markdown(results["report"])
                 
                 # Show sources explicitly
