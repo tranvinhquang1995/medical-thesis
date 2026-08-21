@@ -4,6 +4,7 @@ from translator_text import translate_medical_text
 from translator_file import translate_docx, translate_pdf
 from lit_search import perform_literature_search
 from deep_search import optimize_search_prompt, deep_search_with_gemini, deep_search_with_academic_db
+from ai_search import render_ai_search_tab
 
 # Set page configuration
 st.set_page_config(
@@ -13,23 +14,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Medical Theme (Teal and Blue) + Lock UI (Hide Streamlit menu, header, and footer)
+# Custom CSS for Medical Theme (Teal and Blue) + Robust White-Labeling (Hiding Deploy, Menu, and Header)
 st.markdown("""
 <style>
-    /* Hide Streamlit elements to white-label the app but keep sidebar control */
-    #MainMenu {visibility: hidden;}
-    div[data-testid="stMainMenu"] {visibility: hidden;}
-    div[data-testid="stActionButton"] {visibility: hidden;}
-    .stDeployButton {display: none;}
-    div.stDeployButton {display: none;}
+    /* Hide Streamlit elements to white-label the app */
+    div[data-testid="stToolbar"] {display: none !important;}
+    footer {visibility: hidden !important;}
+    div.stDeployButton {display: none !important;}
     
-    /* Đảm bảo nút mở rộng/thu nhỏ sidebar vẫn hiển thị và hoạt động */
+    /* Ensure the sidebar collapse/expand controls are ALWAYS visible and clickable */
     div[data-testid="collapsedControl"] {
-        visibility: visible !important;
         display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999999 !important;
     }
-    
-    footer {visibility: hidden;}
     
     .main {
         background-color: #f7fafc;
@@ -116,6 +115,7 @@ btn_text = "📝 Dịch thuật văn bản"
 btn_file = "📂 Dịch file Docx, PDF"
 btn_lit = "🔍 Tìm kiếm tài liệu"
 btn_deep = "💡 Tìm kiếm chuyên sâu"
+btn_ai_search = "🌐 Tìm từ nguồn AI khác"
 
 if st.sidebar.button(
     btn_text, 
@@ -145,6 +145,13 @@ if st.sidebar.button(
 ):
     st.session_state.current_tab = btn_deep
 
+if st.sidebar.button(
+    btn_ai_search, 
+    use_container_width=True, 
+    type="primary" if st.session_state.current_tab == btn_ai_search else "secondary"
+):
+    st.session_state.current_tab = btn_ai_search
+
 st.sidebar.markdown("---")
 st.sidebar.info("""
 **Medical Thesis** là ứng dụng hỗ trợ đắc lực cho sinh viên, bác sĩ, và nhà nghiên cứu y học trong việc dịch thuật tài liệu y văn và tổng hợp nghiên cứu khoa học chính xác.
@@ -167,7 +174,7 @@ if not gemini_api_key:
         <pre>GEMINI_API_KEY = "Khóa_API_Của_Bạn"</pre>
     </div>
     """, unsafe_allow_html=True)
-    st.info("Để cấu hình khóa dịch vụ hệ thống, vui lòng liên hệ Nobita hoặc xem tài liệu hướng dẫn.")
+    st.info("Để lấy khóa dịch vụ miễn phí, vui lòng truy cập [AI Studio](https://aistudio.google.com/).")
     st.stop()
 
 # --- FUNCTIONALITIES DISPATCH ---
@@ -334,4 +341,7 @@ elif st.session_state.current_tab == btn_deep:
                     for idx, src in enumerate(unique_sources):
                         st.markdown(f"**[{idx+1}]** [{src['title']}]({src['url']})")
             else:
-                st.error(f"Đã xảy ra lỗi: {results.get('error', 'Không xác định')}")
+                st.error(f"{results.get('error', 'Không xác định')}")
+
+elif st.session_state.current_tab == btn_ai_search:
+    render_ai_search_tab(gemini_api_key, model_choice)
