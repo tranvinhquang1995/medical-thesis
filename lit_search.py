@@ -52,7 +52,7 @@ def perform_literature_search(query: str, api_key: str, model_name: str = "gemin
     Returns a dictionary with the structured text report, the optimized query, and list of source chunks with links.
     """
     if not api_key:
-        raise ValueError("API Key is required.")
+        raise ValueError("Yêu cầu khóa API để thực hiện tìm kiếm.")
         
     client = genai.Client(api_key=api_key)
     
