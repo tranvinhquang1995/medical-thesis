@@ -53,7 +53,7 @@ def translate_docx(file_path: str, output_path: str, direction: str, api_key: st
     def translate_block(text: str) -> str:
         if not text.strip():
             return text
-        prompt = f"Translate the following chunk from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\n\n{text}"
+        prompt = f"Translate the following chunk from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\\n\\n{text}"
         try:
             response = chat.send_message(prompt)
             return response.text.strip()
@@ -134,7 +134,7 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
     # Create a new Word document to store the translation
     doc = Document()
     doc.add_heading("BẢN DỊCH Y KHOA / MEDICAL TRANSLATION", level=1)
-    doc.add_paragraph("Tài liệu được dịch tự động bằng ứng dụng Medical Thesis (Gemini 3.7 Flash).")
+    doc.add_paragraph("Tài liệu được dịch thuật tự động bằng ứng dụng Medical Thesis (Trí tuệ nhân tạo).")
     doc.add_paragraph(f"Chiều dịch: {direction}")
     doc.add_page_break()
     
@@ -146,13 +146,13 @@ def translate_pdf(file_path: str, output_docx_path: str, direction: str, api_key
         
         if text.strip():
             # Send text of the page as a single message to keep context page-by-page
-            prompt = f"Translate the following page {page_num + 1} from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\n\n{text}"
+            prompt = f"Translate the following page {page_num + 1} from {'English to Vietnamese' if direction == 'EN -> VI' else 'Vietnamese to English'}:\\n\\n{text}"
             try:
                 response = chat.send_message(prompt)
                 translated_text = response.text.strip()
                 
                 # Write paragraphs to DOCX
-                for p_text in translated_text.split('\n\n'):
+                for p_text in translated_text.split('\\n\\n'):
                     if p_text.strip():
                         doc.add_paragraph(p_text.strip())
             except Exception as e:
